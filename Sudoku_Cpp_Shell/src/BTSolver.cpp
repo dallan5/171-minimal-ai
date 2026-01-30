@@ -89,9 +89,9 @@ bool BTSolver::arcConsistency ( void )
  * Return: a pair of a map and a bool. The map contains the pointers to all MODIFIED variables, mapped to their MODIFIED domain. 
  * 		   The bool is true if assignment is consistent, false otherwise.
  */
-pair<map<Variable*,Domain>,bool> BTSolver::forwardChecking ( void )
+pair<unordered_map<Variable*,Domain>,bool> BTSolver::forwardChecking ( void )
 {
-	return make_pair(map<Variable*, Domain>(), false);
+	return make_pair(unordered_map<Variable*, Domain>(), false);
 }
 
 /**
@@ -111,9 +111,9 @@ pair<map<Variable*,Domain>,bool> BTSolver::forwardChecking ( void )
  *         the whole NorvigCheck propagation, and mapped to the values that they were assigned. 
  *         The bool is true if assignment is consistent, false otherwise.
  */
-pair<map<Variable*,int>,bool> BTSolver::norvigCheck ( void )
+pair<unordered_map<Variable*,int>,bool> BTSolver::norvigCheck ( void )
 {
-    return make_pair(map<Variable*, int>(), false);
+    return make_pair(unordered_map<Variable*, int>(), false);
 }
 
 /**

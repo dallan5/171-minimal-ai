@@ -11,6 +11,8 @@
 #include <iostream>
 #include <vector>
 #include <algorithm>
+#include <unordered_map>
+
 
 class BTSolver
 {
@@ -20,9 +22,9 @@ public:
 
 	// Consistency Checks (Implement these)
 	bool assignmentsCheck ( void );
-    std::pair<std::map<Variable*,Domain>,bool> forwardChecking  ( void );
+    std::pair<std::unordered_map<Variable*,Domain>,bool> forwardChecking  ( void );
     bool arcConsistency ( void );
-    std::pair<std::map<Variable*,int>,bool> norvigCheck      ( void );
+    std::pair<std::unordered_map<Variable*,int>,bool> norvigCheck      ( void );
 	bool getTournCC       ( void );
 
 	// Variable Selectors (Implement these)

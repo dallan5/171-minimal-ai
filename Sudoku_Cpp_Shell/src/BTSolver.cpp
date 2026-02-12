@@ -1,6 +1,7 @@
 #include"BTSolver.hpp"
-
+#include <climits>
 using namespace std;
+
 
 // =====================================================================
 // Constructors

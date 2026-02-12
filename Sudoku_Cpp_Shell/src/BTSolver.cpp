@@ -91,7 +91,36 @@ bool BTSolver::arcConsistency ( void )
  */
 pair<unordered_map<Variable*,Domain>,bool> BTSolver::forwardChecking ( void )
 {
-	return make_pair(unordered_map<Variable*, Domain>(), false);
+	unordered_map<Variable*,Domain> modified;
+
+	// Loop through all the constrints.
+	for(Constraint* constraint: network.getModifiedConstraints()) {
+		
+		// Get all variables in each constraint
+		for(Variable* variable: constraint->vars) {
+			// if the variable is already assigned, then skip it and move to next.
+			if(!variable->isAssigned()) continue;
+			//get the current variable assignment to make sure we don't use the same for assignment
+			int assignmentValue = variable->getAssignment();
+			// Loop over all neightbours of the variables in the constraints,
+			// if the assignment is the current variable assignment then skip it.
+			for(Variable* neighbour: network.getNeighborsOfVariable(variable)) {
+				if(neighbour->isAssigned()) continue;
+
+				Domain neighbourDomain = neighbour->getDomain();
+
+				if(!neighbourDomain.contains(assignmentValue)) continue;
+				
+				if (neighbourDomain.size() == 1)
+					return {modified, false};
+				
+				trail->push(neighbour);
+				neighbour->removeValueFromDomain(assignmentValue);
+				modified[neighbour] = neighbour->getDomain();
+			}
+		}
+	}
+	return {modified, true};
 }
 
 /**
@@ -148,8 +177,23 @@ Variable* BTSolver::getfirstUnassignedVariable ( void )
  * Return: The unassigned variable with the smallest domain
  */
 Variable* BTSolver::getMRV ( void )
-{
-    return nullptr;
+{	
+    Variable* minVariable = nullptr;
+	for(Variable* variable: network.getVariables()) {
+		if(variable->isAssigned()) continue;
+
+		if(!minVariable) {
+			minVariable = variable;
+			continue;
+		}
+		Domain variableDomain = variable->getDomain();
+		Domain minVariableDomain = minVariable->getDomain();
+
+		if(variableDomain.size() < minVariableDomain.size()) {
+			minVariable = variable;
+		}
+	}
+	return minVariable;
 }
 
 /**
@@ -163,7 +207,57 @@ Variable* BTSolver::getMRV ( void )
  */
 vector<Variable*> BTSolver::MRVwithTieBreaker ( void )
 {
-    return vector<Variable*>();
+	vector<Variable*> minVariables;
+	int minDomainValue = INT_MAX;
+
+	for(Variable* variable: network.getVariables()) {
+		if(variable->isAssigned()) continue;
+
+		Domain variableDomain = variable->getDomain();
+
+		if(minVariables.size() == 0) {
+			minVariables.push_back(variable);
+			minDomainValue = variableDomain.size();
+			continue;
+		}
+
+		if(variableDomain.size() < minDomainValue) {
+			minDomainValue = variableDomain.size();
+			minVariables.clear();
+			minVariables.push_back(variable);
+		} else if(variableDomain.size() == minDomainValue) {
+			// tie breaker -> just push to vector
+			minVariables.push_back(variable);
+		}
+	
+	}
+
+	//return directly if no tie breakers
+	if(minVariables.size() <= 1) return minVariables;
+
+    vector<Variable*> best;
+    int bestDegree = -1;
+
+    for (Variable* variable : minVariables)
+    {
+        int degree = 0;
+        for (Variable* n : network.getNeighborsOfVariable(variable))
+            if (!n->isAssigned())
+                degree++;
+
+        if (degree > bestDegree)
+        {
+            bestDegree = degree;
+            best.clear();
+            best.push_back(variable);
+        }
+        else if (degree == bestDegree)
+        {
+            best.push_back(variable);
+        }
+    }
+
+    return best;
 }
 
 /**
@@ -200,7 +294,28 @@ vector<int> BTSolver::getValuesInOrder ( Variable* v )
  */
 vector<int> BTSolver::getValuesLCVOrder ( Variable* v )
 {
-    return vector<int>();
+	std::vector<int> values = v->getDomain().getValues();
+
+	//we need to loop over our domain values. Then loop over each neighbour. or maybe not. 
+	// maybe we can just fetch our domain, store it. And then we can loop over neighbours and get the one that's best
+	
+	std::vector<int> leastConstrained;
+	unordered_map<int,int> constraintMap;
+
+	ConstraintNetwork::VariableSet neighbours = network.getNeighborsOfVariable(v);
+
+    for (int value : values)
+    {
+        int count = 0;
+        for (Variable* n : neighbours)
+            if (!n->isAssigned() && n->getDomain().contains(value))
+                count++;
+        constraintMap[value] = count;
+    }
+
+    sort(values.begin(), values.end(), [&](int a, int b) { return constraintMap[a] < constraintMap[b]; });
+
+	return vector<int>();
 }
 
 /**

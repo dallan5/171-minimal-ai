@@ -96,28 +96,36 @@ pair<unordered_map<Variable*,Domain>,bool> BTSolver::forwardChecking ( void )
 
 	// Loop through all the constrints.
 	for(Constraint* constraint: network.getModifiedConstraints()) {
-		
+
 		// Get all variables in each constraint
 		for(Variable* variable: constraint->vars) {
 			// if the variable is already assigned, then skip it and move to next.
+			std::cout << variable->toString() << "\n";
 			if(!variable->isAssigned()) continue;
+				
 			//get the current variable assignment to make sure we don't use the same for assignment
 			int assignmentValue = variable->getAssignment();
+			
 			// Loop over all neightbours of the variables in the constraints,
 			// if the assignment is the current variable assignment then skip it.
-			for(Variable* neighbour: network.getNeighborsOfVariable(variable)) {
+			for(Variable* neighbour: constraint->vars) {
+				if(neighbour == variable) continue;
 				if(neighbour->isAssigned()) continue;
 
 				Domain neighbourDomain = neighbour->getDomain();
 
 				if(!neighbourDomain.contains(assignmentValue)) continue;
-				
+
 				if (neighbourDomain.size() == 1)
 					return {modified, false};
-				
-				trail->push(neighbour);
+
+				// Only push + store original domain once per neighbour
+				if(modified.find(neighbour) == modified.end()) {
+					trail->push(neighbour);
+					modified[neighbour] = neighbourDomain; // original domain
+				}
+
 				neighbour->removeValueFromDomain(assignmentValue);
-				modified[neighbour] = neighbour->getDomain();
 			}
 		}
 	}

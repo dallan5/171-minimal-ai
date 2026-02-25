@@ -92,45 +92,46 @@ bool BTSolver::arcConsistency ( void )
  */
 pair<unordered_map<Variable*,Domain>,bool> BTSolver::forwardChecking ( void )
 {
-	unordered_map<Variable*,Domain> modified;
+    unordered_map<Variable*,Domain> modified;
 
-	// Loop through all the constrints.
-	for(Constraint* constraint: network.getModifiedConstraints()) {
+    // Loop through all the constrints.
+    for (Constraint* constraint : network.getModifiedConstraints())
+    {
+        // Get all variables in each constraint
+        for (Variable* variable : constraint->vars)
+        {
+            // if the variable is already assigned, then skip it and move to next.
+            if (!variable->isAssigned()) continue;
 
-		// Get all variables in each constraint
-		for(Variable* variable: constraint->vars) {
-			// if the variable is already assigned, then skip it and move to next.
-			std::cout << variable->toString() << "\n";
-			if(!variable->isAssigned()) continue;
-				
-			//get the current variable assignment to make sure we don't use the same for assignment
-			int assignmentValue = variable->getAssignment();
-			
-			// Loop over all neightbours of the variables in the constraints,
-			// if the assignment is the current variable assignment then skip it.
-			for(Variable* neighbour: constraint->vars) {
-				if(neighbour == variable) continue;
-				if(neighbour->isAssigned()) continue;
+            //get the current variable assignment to make sure we don't use the same for assignment
+            int assignmentValue = variable->getAssignment();
 
-				Domain neighbourDomain = neighbour->getDomain();
+            // Loop over all neightbours of the variables in the constraints,
+            // if the assignment is the current variable assignment then skip it.
+            for (Variable* neighbour : network.getNeighborsOfVariable(variable))
+            {
+                if (neighbour->isAssigned()) continue;
 
-				if(!neighbourDomain.contains(assignmentValue)) continue;
+                Domain neighbourDomain = neighbour->getDomain();
+                if (!neighbourDomain.contains(assignmentValue)) continue;
 
-				if (neighbourDomain.size() == 1)
-					return {modified, false};
+                if (neighbourDomain.size() == 1)
+                    return {modified, false};
 
-				// Only push + store original domain once per neighbour
-				if(modified.find(neighbour) == modified.end()) {
-					trail->push(neighbour);
-					modified[neighbour] = neighbourDomain; // original domain
-				}
+                // Only push + store original domain once per neighbour
+                if (modified.find(neighbour) == modified.end())
+                    trail->push(neighbour);
 
-				neighbour->removeValueFromDomain(assignmentValue);
-			}
-		}
-	}
-	return {modified, true};
+                neighbour->removeValueFromDomain(assignmentValue);
+
+                modified[neighbour] = neighbour->getDomain();
+            }
+        }
+    }
+
+    return {modified, true};
 }
+
 
 /**
  * Part 2 TODO: Implement both of Norvig's Heuristics
@@ -303,28 +304,31 @@ vector<int> BTSolver::getValuesInOrder ( Variable* v )
  */
 vector<int> BTSolver::getValuesLCVOrder ( Variable* v )
 {
-	std::vector<int> values = v->getDomain().getValues();
+	//we need to loop over our domain values. Then loop over each neighbour. Check how many prunes are necessary
+    vector<int> values = v->getDomain().getValues();
+    auto neighbours = network.getNeighborsOfVariable(v);
 
-	//we need to loop over our domain values. Then loop over each neighbour. or maybe not. 
-	// maybe we can just fetch our domain, store it. And then we can loop over neighbours and get the one that's best
-	
-	std::vector<int> leastConstrained;
-	unordered_map<int,int> constraintMap;
+    vector<pair<int,int>> scorePairs; // {pruneCount, value}
 
-	ConstraintNetwork::VariableSet neighbours = network.getNeighborsOfVariable(v);
-
-    for (int value : values)
+    for (int val : values)
     {
         int count = 0;
         for (Variable* n : neighbours)
-            if (!n->isAssigned() && n->getDomain().contains(value))
+        {
+            if (!n->isAssigned() && n->getDomain().contains(val))
                 count++;
-        constraintMap[value] = count;
+        }
+
+        scorePairs.push_back({count, val});
     }
 
-    sort(values.begin(), values.end(), [&](int a, int b) { return constraintMap[a] < constraintMap[b]; });
+    sort(scorePairs.begin(), scorePairs.end()); // sorts by pruneCount ascending
 
-	return vector<int>();
+    vector<int> orderedOut;
+    for (auto& scorePair : scorePairs)
+        orderedOut.push_back(scorePair.second);
+
+    return orderedOut;
 }
 
 /**

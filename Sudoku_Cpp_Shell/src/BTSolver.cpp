@@ -187,23 +187,27 @@ Variable* BTSolver::getfirstUnassignedVariable ( void )
  * Return: The unassigned variable with the smallest domain
  */
 Variable* BTSolver::getMRV ( void )
-{	
-    Variable* minVariable = nullptr;
-	for(Variable* variable: network.getVariables()) {
-		if(variable->isAssigned()) continue;
+{
+    vector<Variable*> allCells = network.getVariables();
 
-		if(!minVariable) {
-			minVariable = variable;
-			continue;
-		}
-		Domain variableDomain = variable->getDomain();
-		Domain minVariableDomain = minVariable->getDomain();
+    Variable* chosenCell = nullptr;
+    int minDomainSize = INT_MAX;
 
-		if(variableDomain.size() < minVariableDomain.size()) {
-			minVariable = variable;
-		}
-	}
-	return minVariable;
+    for (Variable* cell : allCells)
+    {
+        if (!cell->isAssigned())
+        {
+            int currentDomainSize = cell->getDomain().size();
+
+            if (currentDomainSize < minDomainSize)
+            {
+                minDomainSize = currentDomainSize;
+                chosenCell = cell;
+            }
+        }
+    }
+
+    return chosenCell;
 }
 
 /**

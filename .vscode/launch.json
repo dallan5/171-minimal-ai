@@ -6,7 +6,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${fileDirname}/${fileBasenameNoExtension}",
-            "args": ["NOR", "MRV", "LCV", "/Users/david/Documents/UC/Courses/171/projects/Sudoku_Student/Sudoku_Generator/boards/9x9/b_0.txt"],
+            "args": ["NOR", "MAD", "LCV"],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",
             "environment": [],

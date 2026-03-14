@@ -337,54 +337,49 @@ Variable* BTSolver::getMRV ( void )
  */
 vector<Variable*> BTSolver::MRVwithTieBreaker ( void )
 {
-	vector<Variable*> minVariables;
-	int minDomainValue = INT_MAX;
+    vector<Variable*> variables = network.getVariables();
 
-	for(Variable* variable: network.getVariables()) {
-		if(variable->isAssigned()) continue;
-
-		Domain variableDomain = variable->getDomain();
-
-		if(minVariables.size() == 0) {
-			minVariables.push_back(variable);
-			minDomainValue = variableDomain.size();
-			continue;
-		}
-
-		if(variableDomain.size() < minDomainValue) {
-			minDomainValue = variableDomain.size();
-			minVariables.clear();
-			minVariables.push_back(variable);
-		} else if(variableDomain.size() == minDomainValue) {
-			// tie breaker -> just push to vector
-			minVariables.push_back(variable);
-		}
-	
-	}
-
-	//return directly if no tie breakers
-	if(minVariables.size() <= 1) return minVariables;
-
+    int minDomain = INT_MAX;
+    int maxDegree = -1;
     vector<Variable*> best;
-    int bestDegree = -1;
 
-    for (Variable* variable : minVariables)
+    for (Variable* v : variables)
     {
-        int degree = 0;
-        for (Variable* n : network.getNeighborsOfVariable(variable))
-            if (!n->isAssigned())
-                degree++;
+        if (!v->isAssigned())
+        {
+            int domainSize = v->getDomain().size();
 
-        if (degree > bestDegree)
-        {
-            bestDegree = degree;
-            best.clear();
-            best.push_back(variable);
+            int degree = 0;
+            for (Variable* n : network.getNeighborsOfVariable(v))
+                if (!n->isAssigned())
+                    degree++;
+
+            if (domainSize < minDomain)
+            {
+                minDomain = domainSize;
+                maxDegree = degree;
+                best.clear();
+                best.push_back(v);
+            }
+            else if (domainSize == minDomain)
+            {
+                if (degree > maxDegree)
+                {
+                    maxDegree = degree;
+                    best.clear();
+                    best.push_back(v);
+                }
+                else if (degree == maxDegree)
+                {
+                    best.push_back(v);
+                }
+            }
         }
-        else if (degree == bestDegree)
-        {
-            best.push_back(variable);
-        }
+    }
+    // add empty null so the best variable selector won't crash when retriving first element
+    if (best.empty())
+    {
+        best.push_back(nullptr);
     }
 
     return best;

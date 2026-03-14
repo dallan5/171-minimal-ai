@@ -1,0 +1,30 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "type": "cppbuild",
+            "label": "C/C++: clang++ build active file",
+            "command": "/usr/bin/clang++",
+            "args": [
+                "-std=gnu++14",
+                "-fcolor-diagnostics",
+                "-fansi-escape-codes",
+                "-g",
+                "${workspaceFolder}/Sudoku_Cpp_Shell/src/*.cpp", 
+                "-o",
+                "${workspaceFolder}/Sudoku_Cpp_Shell/src/Main"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/Sudoku_Cpp_Shell/src"
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "detail": "Compiles all C++ files in the src folder."
+        }
+    ]
+}

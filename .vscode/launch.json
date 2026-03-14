@@ -1,0 +1,18 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug Active C++ File",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${fileDirname}/${fileBasenameNoExtension}",
+            "args": ["NOR", "MRV", "LCV", "/Users/david/Documents/UC/Courses/171/projects/Sudoku_Student/Sudoku_Generator/boards/9x9/b_0.txt"],
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "lldb", 
+            "preLaunchTask": "C/C++: clang++ build active file" 
+        }
+    ]
+}

@@ -152,9 +152,125 @@ pair<unordered_map<Variable*,Domain>,bool> BTSolver::forwardChecking ( void )
  */
 pair<unordered_map<Variable*,int>,bool> BTSolver::norvigCheck ( void )
 {
-    return make_pair(unordered_map<Variable*, int>(), false);
-}
+    unordered_map<Variable*, int> assignedVariables;
+    bool boardChanged = true;
+    // get N squares on board
+    int N = sudokuGrid.get_p() * sudokuGrid.get_q();
 
+    while (boardChanged)
+    {
+        boardChanged = false;
+        
+        //rule 1, find contraint with only 1 variaible available
+        for (Variable* var : network.getVariables())
+        {
+            //if var is already assigned, then prune neightbours to reduce domain
+            if (var->isAssigned())
+            {
+                int value = var->getAssignment();
+                for (Variable* neighbour : network.getNeighborsOfVariable(var))
+                {
+                    if (!neighbour->isAssigned() && neighbour->getDomain().contains(value))
+                    {
+                        trail->push(neighbour);
+                        neighbour->removeValueFromDomain(value);
+                        boardChanged = true; // A domain shrank, which might trigger new singles
+
+                        if (neighbour->getDomain().size() == 0) {
+                            return {assignedVariables, false};
+                        }
+                    }
+                }
+            }
+            // check domain is 1. then assign that value. This is biggest constrain.
+            else if (var->getDomain().size() == 1)
+            {
+                // get only variable available
+                int value = var->getDomain().getValues()[0];
+
+                // track it and assign it
+                trail->push(var);
+                var->assignValue(value);
+                assignedVariables[var] = value;
+                boardChanged = true;
+
+                // prune the value from all neighbour
+                for (Variable* neighbour : network.getNeighborsOfVariable(var))
+                {
+                    if (!neighbour->isAssigned() && neighbour->getDomain().contains(value))
+                    {
+                        trail->push(neighbour);
+                        neighbour->removeValueFromDomain(value);
+
+                        if (neighbour->getDomain().size() == 0) {
+                            return {assignedVariables, false};
+                        }
+                    }
+                }
+            }
+        }
+        
+        // rule 1, find hidden singles
+        for (Constraint* constraint : network.getModifiedConstraints())
+        {
+            for (int value = 1; value <= N; value ++)
+            {
+                int possibleCount = 0;
+                Variable* targetVariable = nullptr;
+                bool alreadyAssignedInContraint = false;
+
+                // scan the constrint for this value
+                for (Variable* var : constraint->vars)
+                {
+                    if (var->isAssigned() && var->getAssignment() == value) {
+                        alreadyAssignedInContraint = true;
+                        break;
+                    }
+                    if (!var->isAssigned() && var->getDomain().contains(value)) {
+                        possibleCount++;
+                        targetVariable = var;
+                    }
+                }
+                
+                // check waht we gound and move on to the next value
+                if (alreadyAssignedInContraint) {
+                    continue;
+                }
+
+                if (possibleCount == 0) {
+                    return {assignedVariables, false};
+                }
+                else if (possibleCount == 1 && targetVariable != nullptr)
+                {
+                    // this is a hidden single found
+                    // but check it's not already processed
+                    if (assignedVariables.find(targetVariable) == assignedVariables.end())
+                    {
+                        trail->push(targetVariable);
+                        targetVariable->assignValue(value);
+                        assignedVariables[targetVariable] = value;
+                        boardChanged = true;
+
+                        // prune the new assignment from all neighbours
+                        for (Variable* neightbour : network.getNeighborsOfVariable(targetVariable))
+                        {
+                            if (!neightbour->isAssigned() && neightbour->getDomain().contains(value))
+                            {
+                                trail->push(neightbour);
+                                neightbour->removeValueFromDomain(value);
+
+                                if (neightbour->getDomain().size() == 0) {
+                                    return {assignedVariables, false};
+                                }
+                            }
+                        }
+                    }
+                }
+           }
+        }
+    }
+    return {assignedVariables, true};
+}
 /**
  * Optional TODO: Implement your own advanced Constraint Propagation
  *
